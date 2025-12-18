@@ -8,14 +8,11 @@ from collections import Counter
 import re
 import os
 
-# ----------------------------
-# Page config
-# ----------------------------
 st.set_page_config(page_title="Image Captioning", layout="centered")
 st.title("Image Captioning")
 st.write("Upload an image and generate a caption.")
 
-# Nice button styling (optional)
+
 st.markdown(
     """
     <style>
@@ -32,15 +29,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-# ----------------------------
-# Device
-# ----------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# ----------------------------
-# Tokenizer + Vocab (same as notebook)
-# ----------------------------
 def basic_english(text):
     return re.findall(r"\w+|[^\w\s]", text.lower())
 
@@ -62,9 +52,6 @@ class Vocab:
     def set_default_index(self, index):
         self.unk_index = index
 
-# ----------------------------
-# Image transform (same as notebook)
-# ----------------------------
 image_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -74,9 +61,6 @@ image_transform = transforms.Compose([
     )
 ])
 
-# ----------------------------
-# Models (EXACT same names as notebook checkpoint)
-# ----------------------------
 from torchvision.models import resnet18, ResNet18_Weights
 
 class EncoderCNN(nn.Module):
@@ -157,16 +141,12 @@ class DecoderWithAttention(nn.Module):
 
         self.fc = nn.Linear(decoder_dim, vocab_size)
 
-    # IMPORTANT: name must be init_hidden_state (as in your notebook usage)
     def init_hidden_state(self, encoder_out):
         mean_encoder = encoder_out.mean(dim=1)
         h = self.init_h(mean_encoder)
         c = self.init_c(mean_encoder)
         return h, c
 
-# ----------------------------
-# Beam search (same logic as notebook)
-# ----------------------------
 def generate_caption_beam(image, encoder, decoder, vocab, beam_size=5, max_len=25):
     encoder.eval()
     decoder.eval()
@@ -230,9 +210,7 @@ def generate_caption_beam(image, encoder, decoder, vocab, beam_size=5, max_len=2
 
     return " ".join(words)
 
-# ----------------------------
-# Load vocab + model (cached)
-# ----------------------------
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CHECKPOINT_PATH = os.path.join(BASE_DIR, "checkpoint_epoch_14.pth")
 
@@ -249,7 +227,6 @@ def load_everything():
     vocab = Vocab(counter, specials)
     vocab.set_default_index(vocab["<unk>"])
 
-    # Create models with SAME hyperparams as training
     encoder = EncoderCNN(encoder_dim=256).to(device)
     decoder = DecoderWithAttention(
         attention_dim=256,
@@ -260,7 +237,6 @@ def load_everything():
         dropout=0.5
     ).to(device)
 
-    # Load checkpoint
     checkpoint = torch.load(CHECKPOINT_PATH, map_location=device)
     encoder.load_state_dict(checkpoint["encoder"])
     decoder.load_state_dict(checkpoint["decoder"])
@@ -273,9 +249,6 @@ def load_everything():
 with st.spinner("Loading model (first run may take a few minutes)..."):
     encoder, decoder, vocab = load_everything()
 
-# ----------------------------
-# UI
-# ----------------------------
 uploaded = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 if uploaded is not None:
