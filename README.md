@@ -76,6 +76,3 @@ Metric distributions visualized using histograms and density plots.
 
 
 
-- Flickr8k dataset contributors
-- PyTorch and HuggingFace communities
-- Authors of the Show, Attend and Tell paper
